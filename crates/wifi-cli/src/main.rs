@@ -9,8 +9,10 @@ use wifi_scanner::{default_scanner, MockScanner, WifiScanner};
 #[derive(Debug, Parser)]
 #[command(
     name = "nzig",
+    bin_name = "nzig",
     version,
-    about = "Analyze nearby WiFi networks from the terminal."
+    about = "Nzig is a passive WiFi analysis CLI. It reads nearby access-point metadata from operating-system APIs, stores optional scan history, recommends cleaner channels, trains/predicts channel choices, and reports security posture from scan metadata.\n\nNzig la cong cu phan tich WiFi thu dong. Cong cu chi doc metadata access point tu API he dieu hanh, co the luu lich su scan, goi y kenh sach hon, train/predict lua chon kenh, va bao cao tu the bao mat dua tren metadata.",
+    after_help = "Safety / An toan:\n  Nzig does not collect passwords, capture handshakes, sniff raw traffic, inject packets, deauth clients, or attempt access.\n  Nzig khong thu mat khau, khong bat handshake, khong sniff raw traffic, khong inject packet, khong deauth client, va khong thu truy cap.\n\nQuick examples / Vi du nhanh:\n  nzig doctor\n  nzig scan --mock\n  nzig scan --save\n  nzig analyze channels --band 2.4 --top 3 --live\n  nzig analyze security --live --mock\n  nzig report --format md\n\nEnvironment / Bien moi truong:\n  NZIG_PROJECT_DIR  Path to this source checkout when an installed nzig cannot locate it.\n  NZIG_DATA_DIR     Directory for saved scans, DuckDB catalog, and reports."
 )]
 struct Cli {
     #[command(subcommand)]
@@ -19,69 +21,127 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Commands {
+    #[command(
+        about = "Check local scanner and worker dependencies. / Kiem tra scanner va worker."
+    )]
     Doctor,
+    #[command(about = "Scan nearby WiFi access points. / Quet cac access point WiFi gan may.")]
     Scan(ScanArgs),
+    #[command(about = "Analyze scan data. / Phan tich du lieu WiFi da quet.")]
     Analyze {
         #[command(subcommand)]
         command: AnalyzeCommand,
     },
+    #[command(about = "Inspect saved scan history. / Xem lich su scan da luu.")]
     History {
         #[command(subcommand)]
         command: HistoryCommand,
     },
+    #[command(
+        about = "Train or run channel recommendation models. / Train hoac chay model goi y kenh."
+    )]
     Model {
         #[command(subcommand)]
         command: ModelCommand,
     },
+    #[command(about = "Build a report from saved scans. / Tao bao cao tu scan da luu.")]
     Report(ReportArgs),
 }
 
 #[derive(Debug, Args)]
 struct ScanArgs {
-    #[arg(long)]
+    #[arg(
+        long,
+        help = "Save scan records to local storage. / Luu ket qua scan vao storage cuc bo."
+    )]
     save: bool,
-    #[arg(long, value_enum, default_value_t = OutputFormat::Table)]
+    #[arg(long, value_enum, default_value_t = OutputFormat::Table, help = "Output format. / Dinh dang dau ra.")]
     format: OutputFormat,
-    #[arg(long)]
+    #[arg(
+        long,
+        help = "Use deterministic sample data instead of hardware scan. / Dung du lieu mau thay vi quet phan cung."
+    )]
     mock: bool,
 }
 
 #[derive(Debug, Subcommand)]
 enum AnalyzeCommand {
+    #[command(about = "Recommend cleaner WiFi channels. / Goi y kenh WiFi it nhieu hon.")]
     Channels(ChannelArgs),
+    #[command(about = "Audit passive security metadata. / Kiem tra bao mat thu dong tu metadata.")]
+    Security(SecurityArgs),
 }
 
 #[derive(Debug, Args)]
 struct ChannelArgs {
-    #[arg(long, default_value = "2.4")]
+    #[arg(
+        long,
+        default_value = "2.4",
+        help = "WiFi band: 2.4, 5, or 6. / Bang tan WiFi: 2.4, 5, hoac 6."
+    )]
     band: String,
-    #[arg(long, default_value_t = 5)]
+    #[arg(
+        long,
+        default_value_t = 5,
+        help = "Maximum rows to return. / So dong toi da."
+    )]
     top: usize,
-    #[arg(long, value_enum, default_value_t = OutputFormat::Table)]
+    #[arg(long, value_enum, default_value_t = OutputFormat::Table, help = "Output format. / Dinh dang dau ra.")]
     format: OutputFormat,
-    #[arg(long)]
+    #[arg(
+        long,
+        help = "Scan now and analyze the live records. / Quet ngay va phan tich ket qua hien tai."
+    )]
     live: bool,
-    #[arg(long)]
+    #[arg(
+        long,
+        help = "Use deterministic sample data with --live. / Dung du lieu mau khi co --live."
+    )]
     mock: bool,
+}
+
+#[derive(Debug, Args)]
+struct SecurityArgs {
+    #[arg(long, value_enum, default_value_t = OutputFormat::Table, help = "Output format. / Dinh dang dau ra.")]
+    format: OutputFormat,
+    #[arg(
+        long,
+        help = "Scan now and analyze the live records. / Quet ngay va phan tich ket qua hien tai."
+    )]
+    live: bool,
+    #[arg(
+        long,
+        help = "Use deterministic sample data with --live. / Dung du lieu mau khi co --live."
+    )]
+    mock: bool,
+    #[arg(long, value_enum, default_value_t = Severity::Info, help = "Minimum severity to show. / Muc do toi thieu can hien thi.")]
+    min_severity: Severity,
 }
 
 #[derive(Debug, Subcommand)]
 enum HistoryCommand {
+    #[command(about = "Summarize saved scan sessions. / Tom tat cac phien scan da luu.")]
     Summary {
-        #[arg(long, value_enum, default_value_t = OutputFormat::Json)]
+        #[arg(long, value_enum, default_value_t = OutputFormat::Json, help = "Output format. / Dinh dang dau ra.")]
         format: OutputFormat,
     },
 }
 
 #[derive(Debug, Subcommand)]
 enum ModelCommand {
+    #[command(
+        about = "Train the channel model from saved scans. / Train model kenh tu scan da luu."
+    )]
     Train,
+    #[command(
+        about = "Predict recommended channels with the trained model. / Du doan kenh goi y bang model."
+    )]
     Predict(ChannelArgs),
 }
 
 #[derive(Debug, Args)]
 struct ReportArgs {
-    #[arg(long, value_enum, default_value_t = ReportFormat::Md)]
+    #[arg(long, value_enum, default_value_t = ReportFormat::Md, help = "Report format. / Dinh dang bao cao.")]
     format: ReportFormat,
 }
 
@@ -97,6 +157,27 @@ enum ReportFormat {
     Json,
 }
 
+#[derive(Clone, Copy, Debug, ValueEnum)]
+enum Severity {
+    Info,
+    Low,
+    Medium,
+    High,
+    Critical,
+}
+
+impl Severity {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Info => "info",
+            Self::Low => "low",
+            Self::Medium => "medium",
+            Self::High => "high",
+            Self::Critical => "critical",
+        }
+    }
+}
+
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
@@ -106,6 +187,9 @@ fn main() -> Result<()> {
         Commands::Analyze {
             command: AnalyzeCommand::Channels(args),
         } => analyze_channels(args),
+        Commands::Analyze {
+            command: AnalyzeCommand::Security(args),
+        } => analyze_security(args),
         Commands::History {
             command: HistoryCommand::Summary { format },
         } => worker_passthrough(&["history-summary"], format),
@@ -187,6 +271,23 @@ fn analyze_channels(args: ChannelArgs) -> Result<()> {
         None,
     )?;
     print_json_or_table(&output, args.format, RecommendationTable)
+}
+
+fn analyze_security(args: SecurityArgs) -> Result<()> {
+    let min_severity = args.min_severity.as_str();
+    let live_records;
+    let mut command = vec!["security-audit", "--min-severity", min_severity];
+
+    let input = if args.live {
+        live_records = serde_json::to_string(&run_scan(args.mock)?)?;
+        command.push("--stdin");
+        Some(live_records.as_str())
+    } else {
+        None
+    };
+
+    let output = worker::run(&command, input)?;
+    print_json_or_table(&output, args.format, SecurityTable)
 }
 
 fn model_predict(args: ChannelArgs) -> Result<()> {
@@ -278,6 +379,8 @@ trait TableRenderer {
 
 struct RecommendationTable;
 
+struct SecurityTable;
+
 impl TableRenderer for RecommendationTable {
     fn render(&self, value: &serde_json::Value) -> Result<()> {
         let rows = value.as_array().context("expected JSON array")?;
@@ -310,6 +413,29 @@ impl TableRenderer for RecommendationTable {
     }
 }
 
+impl TableRenderer for SecurityTable {
+    fn render(&self, value: &serde_json::Value) -> Result<()> {
+        let rows = value.as_array().context("expected JSON array")?;
+        let mut table = Table::new();
+        table.load_preset(UTF8_FULL);
+        table.set_header(vec![
+            "Severity", "Score", "SSID", "BSSID", "Security", "Findings",
+        ]);
+        for row in rows {
+            table.add_row(vec![
+                json_cell(row, "severity"),
+                json_cell(row, "risk_score"),
+                json_cell(row, "ssid"),
+                json_cell(row, "bssid"),
+                json_cell(row, "security"),
+                findings_cell(row),
+            ]);
+        }
+        println!("{table}");
+        Ok(())
+    }
+}
+
 fn print_json_or_table<T: TableRenderer>(
     output: &str,
     format: OutputFormat,
@@ -331,6 +457,20 @@ fn json_cell(value: &serde_json::Value, key: &str) -> String {
         Some(value) => value.to_string(),
         None => String::new(),
     }
+}
+
+fn findings_cell(value: &serde_json::Value) -> String {
+    value
+        .get("findings")
+        .and_then(serde_json::Value::as_array)
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(|item| item.get("title").and_then(serde_json::Value::as_str))
+                .collect::<Vec<_>>()
+                .join("; ")
+        })
+        .unwrap_or_default()
 }
 
 fn tool_status(command: &str, args: &[&str]) -> Vec<Cell> {

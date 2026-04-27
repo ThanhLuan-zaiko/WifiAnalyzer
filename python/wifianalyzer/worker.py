@@ -9,7 +9,7 @@ import duckdb
 import polars as pl
 import sklearn
 
-from . import backend, ml, report, storage
+from . import backend, ml, report, security, storage
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -23,6 +23,14 @@ def main(argv: list[str] | None = None) -> int:
     recommend.add_argument("--stdin", action="store_true")
     recommend.add_argument("--band", default="2.4")
     recommend.add_argument("--top", type=int, default=5)
+
+    security_audit = subparsers.add_parser("security-audit")
+    security_audit.add_argument("--stdin", action="store_true")
+    security_audit.add_argument(
+        "--min-severity",
+        choices=["info", "low", "medium", "high", "critical"],
+        default="info",
+    )
 
     subparsers.add_parser("history-summary")
     subparsers.add_parser("model-train")
@@ -65,6 +73,10 @@ def dispatch(args: argparse.Namespace) -> Any:
     if args.command == "recommend":
         records = _read_records_from_stdin() if args.stdin else storage.load_records()
         return backend.recommend_channels(records, args.band, args.top)
+
+    if args.command == "security-audit":
+        records = _read_records_from_stdin() if args.stdin else storage.load_records()
+        return security.audit_records(records, args.min_severity)
 
     if args.command == "history-summary":
         return storage.history_summary()
