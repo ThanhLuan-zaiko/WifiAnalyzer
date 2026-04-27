@@ -1,0 +1,42 @@
+[build-system]
+requires = ["maturin>=1.9,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "wifi-analyzer"
+version = "0.1.0"
+description = "Rust/Python WiFi analysis CLI with DuckDB, Parquet, Polars, and PyO3."
+readme = "README.md"
+requires-python = ">=3.14,<3.15"
+dependencies = [
+    "duckdb>=1.5.0",
+    "joblib>=1.5.0",
+    "numpy>=2.3.0",
+    "polars>=1.40.0",
+    "scikit-learn>=1.8.0",
+]
+
+[project.scripts]
+nzig-worker = "wifianalyzer.worker:main"
+
+[dependency-groups]
+dev = [
+    "maturin>=1.9,<2.0",
+    "pytest>=8.3",
+    "ruff>=0.11",
+]
+
+[tool.maturin]
+manifest-path = "crates/wifi-ffi/Cargo.toml"
+module-name = "wifianalyzer.wifi_backend"
+python-source = "python"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

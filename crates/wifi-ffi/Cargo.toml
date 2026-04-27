@@ -1,0 +1,15 @@
+[package]
+name = "wifi-ffi"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "wifi_backend"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+pyo3 = { workspace = true, features = ["extension-module"] }
+serde_json.workspace = true
+wifi-core.workspace = true
