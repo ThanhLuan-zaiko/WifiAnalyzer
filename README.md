@@ -8,6 +8,8 @@ Nzig là ứng dụng CLI phân tích WiFi đa nền tảng, được xây theo 
 
 Nzig là công cụ phân tích thụ động. Ứng dụng chỉ đọc metadata WiFi gần máy thông qua API hoặc công cụ hệ điều hành cung cấp. Nzig không thu mật khẩu, không inject packet, không deauth client và không sniff raw traffic.
 
+Wordlist trong Nzig chỉ được dùng như danh sách marker rủi ro để so khớp SSID/vendor/default pattern trong audit thụ động. Nzig không dùng wordlist để thử mật khẩu, crack handshake, brute-force WPS PIN hoặc truy cập mạng.
+
 ## Yêu Cầu
 
 Cài các công cụ sau trước khi clone repo:
@@ -68,6 +70,7 @@ cargo run -p nzig-cli -- doctor
 cargo run -p nzig-cli -- scan --mock
 cargo run -p nzig-cli -- scan --mock --save
 cargo run -p nzig-cli -- analyze channels --band 2.4 --top 3 --live --mock
+cargo run -p nzig-cli -- analyze security --live --mock --wordlist internal-risk-markers.txt
 cargo run -p nzig-cli -- history summary
 cargo run -p nzig-cli -- model train
 cargo run -p nzig-cli -- model predict --band 2.4 --top 3

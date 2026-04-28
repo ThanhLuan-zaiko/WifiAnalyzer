@@ -1,5 +1,7 @@
 mod worker;
 
+use std::path::PathBuf;
+
 use anyhow::{Context, Result};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use comfy_table::{presets::UTF8_FULL, Cell, Table};
@@ -12,7 +14,7 @@ use wifi_scanner::{default_scanner, MockScanner, WifiScanner};
     bin_name = "nzig",
     version,
     about = "Nzig is a passive WiFi analysis CLI. It reads nearby access-point metadata from operating-system APIs, stores optional scan history, recommends cleaner channels, trains/predicts channel choices, and reports security posture from scan metadata.\n\nNzig la cong cu phan tich WiFi thu dong. Cong cu chi doc metadata access point tu API he dieu hanh, co the luu lich su scan, goi y kenh sach hon, train/predict lua chon kenh, va bao cao tu the bao mat dua tren metadata.",
-    after_help = "Safety / An toan:\n  Nzig does not collect passwords, capture handshakes, sniff raw traffic, inject packets, deauth clients, or attempt access.\n  Nzig khong thu mat khau, khong bat handshake, khong sniff raw traffic, khong inject packet, khong deauth client, va khong thu truy cap.\n\nQuick examples / Vi du nhanh:\n  nzig doctor\n  nzig scan --mock\n  nzig scan --save\n  nzig analyze channels --band 2.4 --top 3 --live\n  nzig analyze security --live --mock\n  nzig report --format md\n\nEnvironment / Bien moi truong:\n  NZIG_PROJECT_DIR  Path to this source checkout when an installed nzig cannot locate it.\n  NZIG_DATA_DIR     Directory for saved scans, DuckDB catalog, and reports."
+    after_help = "Safety / An toan:\n  Nzig does not collect passwords, capture handshakes, sniff raw traffic, inject packets, deauth clients, or attempt access.\n  Nzig khong thu mat khau, khong bat handshake, khong sniff raw traffic, khong inject packet, khong deauth client, va khong thu truy cap.\n\nQuick examples / Vi du nhanh:\n  nzig doctor\n  nzig scan --mock\n  nzig scan --save\n  nzig analyze channels --band 2.4 --top 3 --live\n  nzig analyze security --live --mock\n  nzig analyze security --wordlist internal-risk-markers.txt\n  nzig report --format md\n\nEnvironment / Bien moi truong:\n  NZIG_PROJECT_DIR  Path to this source checkout when an installed nzig cannot locate it.\n  NZIG_DATA_DIR     Directory for saved scans, DuckDB catalog, and reports."
 )]
 struct Cli {
     #[command(subcommand)]
@@ -116,6 +118,12 @@ struct SecurityArgs {
     mock: bool,
     #[arg(long, value_enum, default_value_t = Severity::Info, help = "Minimum severity to show. / Muc do toi thieu can hien thi.")]
     min_severity: Severity,
+    #[arg(
+        long,
+        value_name = "PATH",
+        help = "UTF-8 file of passive SSID/vendor risk markers; terms are not used as passwords. / File marker rui ro thu dong, khong dung de thu mat khau."
+    )]
+    wordlist: Vec<PathBuf>,
 }
 
 #[derive(Debug, Subcommand)]
@@ -276,17 +284,26 @@ fn analyze_channels(args: ChannelArgs) -> Result<()> {
 fn analyze_security(args: SecurityArgs) -> Result<()> {
     let min_severity = args.min_severity.as_str();
     let live_records;
-    let mut command = vec!["security-audit", "--min-severity", min_severity];
+    let mut command = vec![
+        "security-audit".to_owned(),
+        "--min-severity".to_owned(),
+        min_severity.to_owned(),
+    ];
+    for path in &args.wordlist {
+        command.push("--wordlist".to_owned());
+        command.push(path.display().to_string());
+    }
 
     let input = if args.live {
         live_records = serde_json::to_string(&run_scan(args.mock)?)?;
-        command.push("--stdin");
+        command.push("--stdin".to_owned());
         Some(live_records.as_str())
     } else {
         None
     };
 
-    let output = worker::run(&command, input)?;
+    let command_refs = command.iter().map(String::as_str).collect::<Vec<_>>();
+    let output = worker::run(&command_refs, input)?;
     print_json_or_table(&output, args.format, SecurityTable)
 }
 
@@ -419,7 +436,7 @@ impl TableRenderer for SecurityTable {
         let mut table = Table::new();
         table.load_preset(UTF8_FULL);
         table.set_header(vec![
-            "Severity", "Score", "SSID", "BSSID", "Security", "Findings",
+            "Severity", "Score", "SSID", "BSSID", "Location", "Security", "Findings",
         ]);
         for row in rows {
             table.add_row(vec![
@@ -427,6 +444,7 @@ impl TableRenderer for SecurityTable {
                 json_cell(row, "risk_score"),
                 json_cell(row, "ssid"),
                 json_cell(row, "bssid"),
+                json_cell(row, "location"),
                 json_cell(row, "security"),
                 findings_cell(row),
             ]);

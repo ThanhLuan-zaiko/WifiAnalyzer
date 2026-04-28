@@ -21,6 +21,7 @@
 
 - Thêm logic quét theo hệ điều hành bằng cách implement `WifiScanner` và trả về `ScanRecord`.
 - Scanner chỉ được phân tích thụ động: không packet injection, không truy cập credential, không deauth và không raw traffic capture.
+- Wordlist chỉ được dùng trong audit thụ động như marker SSID/vendor/default pattern; không được dùng để thử mật khẩu, crack handshake hoặc brute-force WPS PIN.
 - Với tác vụ phân tích nặng, ưu tiên viết ở Python trước; khi có phần nóng, ổn định và deterministic thì chuyển xuống `wifi-core` rồi expose qua `wifi-ffi`.
 - Thay đổi schema nên tương thích ngược nếu có thể. Field mới nên optional và phải lưu được trong Parquet.
 - CLI nên giữ command ngắn, rõ nghĩa và ổn định; các workflow dài nên được gom thành subcommand thay vì yêu cầu người dùng tự nối nhiều lệnh.

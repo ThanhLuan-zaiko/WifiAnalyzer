@@ -31,6 +31,12 @@ def main(argv: list[str] | None = None) -> int:
         choices=["info", "low", "medium", "high", "critical"],
         default="info",
     )
+    security_audit.add_argument(
+        "--wordlist",
+        action="append",
+        default=[],
+        help="UTF-8 file of passive SSID/vendor risk markers; terms are not used as passwords.",
+    )
 
     subparsers.add_parser("history-summary")
     subparsers.add_parser("model-train")
@@ -76,7 +82,8 @@ def dispatch(args: argparse.Namespace) -> Any:
 
     if args.command == "security-audit":
         records = _read_records_from_stdin() if args.stdin else storage.load_records()
-        return security.audit_records(records, args.min_severity)
+        wordlist_terms = security.load_wordlist_terms(args.wordlist)
+        return security.audit_records(records, args.min_severity, wordlist_terms)
 
     if args.command == "history-summary":
         return storage.history_summary()
