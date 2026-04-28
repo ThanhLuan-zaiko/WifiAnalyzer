@@ -52,14 +52,16 @@ def _markdown(
         "",
     ]
     if security_audit["top_networks"]:
-        lines.append("| SSID | Severity | Score | Location | Findings |")
-        lines.append("| --- | --- | ---: | --- | --- |")
+        lines.append("| SSID | Severity | Score | Location | Evidence | Findings |")
+        lines.append("| --- | --- | ---: | --- | --- | --- |")
         for row in security_audit["top_networks"]:
             findings = "; ".join(row["findings"])
             ssid = row["ssid"] or "<hidden>"
             location = row.get("location") or ""
+            evidence = row.get("evidence") or ""
             lines.append(
-                f"| {ssid} | {row['severity']} | {row['risk_score']} | {location} | {findings} |"
+                f"| {ssid} | {row['severity']} | {row['risk_score']} | {location} | "
+                f"{evidence} | {findings} |"
             )
         lines.append("")
     else:

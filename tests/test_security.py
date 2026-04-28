@@ -71,10 +71,11 @@ def test_security_audit_flags_wps_and_pmf_metadata() -> None:
 
     assert _finding_ids(rows[0]) >= {"wps_advertised", "pmf_optional"}
     assert rows[0]["severity"] == "high"
-    assert rows[0]["findings"][0]["location"] in {
+    assert rows[0]["location"] in {
         "security mode",
         "router management metadata",
     }
+    assert rows[0]["evidence"]
 
 
 def test_security_summary_counts_risk_levels_and_recommendations() -> None:

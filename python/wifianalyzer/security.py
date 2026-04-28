@@ -88,6 +88,7 @@ def summarize_audit(
                 "risk_score": row["risk_score"],
                 "location": _primary_location(row["findings"]),
                 "source": _primary_source(row["findings"]),
+                "evidence": _primary_evidence(row["findings"]),
                 "findings": [finding["title"] for finding in row["findings"]],
                 "recommendations": row["recommendations"],
             }
@@ -161,6 +162,9 @@ def _audit_record(record: dict[str, Any], wordlist_terms: set[str]) -> dict[str,
         "security": security or None,
         "severity": severity,
         "risk_score": risk_score,
+        "location": _primary_location(findings),
+        "source": _primary_source(findings),
+        "evidence": _primary_evidence(findings),
         "findings": findings,
         "recommendations": _recommendations(findings),
         "password_risk": _password_risk(security, findings),
@@ -511,6 +515,14 @@ def _primary_source(findings: list[dict[str, Any]]) -> str:
         if source:
             return source
     return "scan-metadata"
+
+
+def _primary_evidence(findings: list[dict[str, Any]]) -> str:
+    for finding in findings:
+        evidence = str(finding.get("evidence") or "").strip()
+        if evidence:
+            return evidence
+    return "scan metadata"
 
 
 def _password_risk(security: str, findings: list[dict[str, Any]]) -> dict[str, str]:

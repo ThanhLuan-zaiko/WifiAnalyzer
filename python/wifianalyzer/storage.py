@@ -45,8 +45,20 @@ def load_records(data_dir: Path | None = None) -> list[dict[str, Any]]:
     files = sorted((data_dir / "raw").rglob("*.parquet"))
     if not files:
         return []
-    frames = [pl.read_parquet(path) for path in files]
-    return pl.concat(frames, how="diagonal").to_dicts()
+
+    raw_glob = (data_dir / "raw" / "**" / "*.parquet").as_posix()
+    connection = duckdb.connect()
+    try:
+        cursor = connection.execute(
+            f"""
+            SELECT * EXCLUDE (date)
+            FROM read_parquet('{raw_glob}', union_by_name = true)
+            """
+        )
+        columns = [description[0] for description in cursor.description]
+        return [dict(zip(columns, row, strict=False)) for row in cursor.fetchall()]
+    finally:
+        connection.close()
 
 
 def history_summary(data_dir: Path | None = None) -> dict[str, Any]:

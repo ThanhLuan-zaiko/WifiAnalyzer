@@ -24,6 +24,7 @@ def test_report_json_includes_security_audit() -> None:
     assert result["security_audit"]["records"] == 2
     assert result["security_audit"]["severity_counts"]["critical"] == 1
     assert result["security_audit"]["top_networks"][0]["location"] == "link-layer encryption"
+    assert result["security_audit"]["top_networks"][0]["evidence"]
 
 
 def test_report_markdown_includes_security_section() -> None:
@@ -35,6 +36,7 @@ def test_report_markdown_includes_security_section() -> None:
     assert "## Security Audit" in result["content"]
     assert "Guest" in result["content"]
     assert "Location" in result["content"]
+    assert "Evidence" in result["content"]
 
 
 @contextmanager

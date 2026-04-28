@@ -436,7 +436,14 @@ impl TableRenderer for SecurityTable {
         let mut table = Table::new();
         table.load_preset(UTF8_FULL);
         table.set_header(vec![
-            "Severity", "Score", "SSID", "BSSID", "Location", "Security", "Findings",
+            "Severity",
+            "Score",
+            "SSID",
+            "BSSID",
+            "Location",
+            "Evidence",
+            "Security",
+            "Findings",
         ]);
         for row in rows {
             table.add_row(vec![
@@ -445,6 +452,7 @@ impl TableRenderer for SecurityTable {
                 json_cell(row, "ssid"),
                 json_cell(row, "bssid"),
                 json_cell(row, "location"),
+                json_cell(row, "evidence"),
                 json_cell(row, "security"),
                 findings_cell(row),
             ]);

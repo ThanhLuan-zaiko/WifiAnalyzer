@@ -1,14 +1,27 @@
 # Nzig
 
-Nzig là ứng dụng CLI phân tích WiFi đa nền tảng, được xây theo mô hình monorepo Rust + Python.
+Nzig là ứng dụng CLI phân tích WiFi đa nền tảng, được xây theo mô hình monorepo
+Rust + Python.
 
-- Rust phụ trách ứng dụng terminal `nzig`, lớp quét WiFi, schema dữ liệu chung và các kernel tính điểm native.
-- Python phụ trách lưu trữ DuckDB/Parquet, xử lý dữ liệu bằng Polars, tạo báo cáo và workflow ML.
+- Rust phụ trách ứng dụng terminal `nzig`, lớp quét WiFi, schema dữ liệu chung,
+  và các kernel tính điểm native.
+- Python phụ trách lưu trữ DuckDB/Parquet, xử lý dữ liệu bằng Polars, tạo báo
+  cáo, và workflow ML.
 - `cargo` quản lý phần Rust, còn `uv` quản lý môi trường và thư viện Python.
 
-Nzig là công cụ phân tích thụ động. Ứng dụng chỉ đọc metadata WiFi gần máy thông qua API hoặc công cụ hệ điều hành cung cấp. Nzig không thu mật khẩu, không inject packet, không deauth client và không sniff raw traffic.
+Nzig là công cụ phân tích thụ động. Ứng dụng chỉ đọc metadata WiFi gần máy
+thông qua API hoặc công cụ hệ điều hành cung cấp. Nzig không thu mật khẩu,
+không inject packet, không deauth client, và không sniff raw traffic.
 
-Wordlist trong Nzig chỉ được dùng như danh sách marker rủi ro để so khớp SSID/vendor/default pattern trong audit thụ động. Nzig không dùng wordlist để thử mật khẩu, crack handshake, brute-force WPS PIN hoặc truy cập mạng.
+Wordlist trong Nzig chỉ được dùng như danh sách marker rủi ro để so khớp SSID /
+vendor / default pattern trong audit thụ động. Nzig không dùng wordlist để thử
+mật khẩu, crack handshake, brute-force WPS PIN, hay truy cập mạng.
+
+## Tài Liệu
+
+- [Kiến trúc](docs/ARCHITECTURE.md)
+- [Hướng dẫn kiểm tra bảo mật WiFi](docs/SECURITY_AUDIT.md)
+- [Hướng dẫn sử dụng tiếng Việt](docs/HUONG_DAN_SU_DUNG_VI.md)
 
 ## Yêu Cầu
 
@@ -18,11 +31,14 @@ Cài các công cụ sau trước khi clone repo:
 - Rust toolchain có Cargo. Khuyến nghị cài qua `rustup`.
 - `uv` để quản lý virtualenv và dependency Python.
 - Python `3.14.x`. Dự án đang pin `>=3.14,<3.15`.
-- Windows: Microsoft C++ Build Tools hoặc Visual Studio Build Tools có MSVC toolchain.
+- Windows: Microsoft C++ Build Tools hoặc Visual Studio Build Tools có MSVC
+  toolchain.
 - Linux: NetworkManager và lệnh `nmcli` để quét WiFi thật.
-- macOS: adapter hiện tại dùng lệnh legacy `airport -s`; các bản macOS mới có thể cần thay adapter bằng CoreWLAN bridge.
+- macOS: adapter hiện tại dùng lệnh legacy `airport -s`; các bản macOS mới có
+  thể cần thay adapter bằng CoreWLAN bridge.
 
-Các thư viện Python được khóa trong `uv.lock` và cài bằng `uv sync --dev`. Những thư viện quan trọng:
+Các thư viện Python được khóa trong `uv.lock` và cài bằng `uv sync --dev`.
+Những thư viện quan trọng:
 
 - `polars`: DataFrame và feature engineering.
 - `duckdb`: analytical database cục bộ, dùng làm catalog và query engine.
@@ -51,7 +67,8 @@ uv run pytest
 ```
 
 `uv sync --dev` tạo `.venv/` và cài toàn bộ dependency Python theo `uv.lock`.
-`uv run maturin develop` build Rust extension rồi cài vào virtualenv với tên import `wifianalyzer.wifi_backend`.
+`uv run maturin develop` build Rust extension rồi cài vào virtualenv với tên
+import `wifianalyzer.wifi_backend`.
 
 Nếu Windows báo lỗi quyền khi `uv` ghi cache, dùng cache cục bộ trong repo:
 
@@ -77,7 +94,9 @@ cargo run -p nzig-cli -- model predict --band 2.4 --top 3
 cargo run -p nzig-cli -- report --format md
 ```
 
-Nên chạy `--mock` trước. Chế độ này kiểm tra được CLI, Python worker, PyO3 backend, DuckDB/Parquet storage và luồng ML mà không phụ thuộc phần cứng WiFi hoặc quyền quét của hệ điều hành.
+Nên chạy `--mock` trước. Chế độ này kiểm tra được CLI, Python worker, PyO3
+backend, DuckDB/Parquet storage, và luồng ML mà không phụ thuộc phần cứng WiFi
+hoặc quyền quét của hệ điều hành.
 
 ## Cài Lệnh `nzig`
 
@@ -89,9 +108,12 @@ nzig doctor
 nzig scan --mock
 ```
 
-Binary sau khi cài có tên là `nzig`, vì vậy người dùng chỉ cần gõ `nzig` trong terminal thay vì lệnh Cargo dài.
+Binary sau khi cài có tên là `nzig`, vì vậy người dùng chỉ cần gõ `nzig` trong
+terminal thay vì lệnh Cargo dài.
 
-Khi cài bằng cách này, `nzig` thường tự tìm được source checkout đã dùng để build. Nếu bạn di chuyển repo hoặc chạy ở máy khác, đặt `NZIG_PROJECT_DIR` trỏ tới thư mục clone:
+Khi cài bằng cách này, `nzig` thường tự tìm được source checkout đã dùng để
+build. Nếu bạn di chuyển repo hoặc chạy ở máy khác, đặt `NZIG_PROJECT_DIR`
+trỏ tới thư mục clone:
 
 ```powershell
 $env:NZIG_PROJECT_DIR='D:\Project\Rust\WifiAnalyzer'
@@ -133,13 +155,17 @@ Trên macOS, bản hiện tại phụ thuộc lệnh legacy `airport -s`.
 
 ## Cấu Trúc Dự Án
 
-- `crates/wifi-core`: schema chung, chuẩn hóa dữ liệu, ánh xạ channel/frequency, tính điểm.
+- `crates/wifi-core`: schema chung, chuẩn hóa dữ liệu, ánh xạ channel /
+  frequency, tính điểm.
 - `crates/wifi-scanner`: trait scanner và adapter theo hệ điều hành.
-- `crates/wifi-ffi`: PyO3 extension để Python import dưới tên `wifianalyzer.wifi_backend`.
+- `crates/wifi-ffi`: PyO3 extension để Python import dưới tên
+  `wifianalyzer.wifi_backend`.
 - `crates/wifi-cli`: Rust package build ra binary `nzig`.
-- `python/wifianalyzer`: storage, feature engineering, ML worker và reporting.
+- `python/wifianalyzer`: storage, feature engineering, ML worker, và reporting.
 - `tests`: test Python.
 - `docs/ARCHITECTURE.md`: ranh giới module và quy tắc mở rộng.
+- `docs/SECURITY_AUDIT.md`: cách đọc audit bảo mật và các finding.
+- `docs/HUONG_DAN_SU_DUNG_VI.md`: hướng dẫn đọc các màn hình lệnh trong dự án.
 
 ## Lệnh Kiểm Tra Trước Khi Commit
 
@@ -157,3 +183,4 @@ Nếu đổi dependency hoặc rebuild PyO3 extension, chạy lại:
 uv sync --dev
 uv run maturin develop
 ```
+
